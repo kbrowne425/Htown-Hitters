@@ -1,0 +1,740 @@
+Kb 2026 Htown Hitter pairing app
+
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Drag Racing Pairings</title>
+
+<style>
+  :root{
+    --bg:#0b0f14; --panel:#121826; --text:#e8eef7; --muted:#a9b4c4;
+    --border:rgba(255,255,255,.12);
+    --primary:rgba(77,163,255,.22);
+    --ok:rgba(53,208,127,.22);
+    --danger:rgba(255,77,77,.20);
+    --ghost:rgba(255,255,255,.05);
+    --radius:14px;
+  }
+  body{margin:0; padding:16px; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; background:var(--bg); color:var(--text)}
+  h1{font-size:18px; margin:0}
+  .topline{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px}
+  .pill{font-size:12px; color:var(--muted); border:1px solid var(--border); padding:6px 10px; border-radius:999px; background:rgba(255,255,255,.04); white-space:nowrap}
+
+  .card{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:14px; margin-bottom:14px}
+  label{font-size:12px; color:var(--muted)}
+  input, button{width:100%; padding:11px 12px; margin-top:6px; border-radius:12px; border:1px solid var(--border); background:#0f1624; color:var(--text); font-size:14px}
+  button{cursor:pointer; user-select:none}
+  button:disabled{opacity:.55; cursor:not-allowed}
+
+  .row{display:grid; gap:10px}
+  @media(min-width:520px){
+    .two{grid-template-columns:1fr 1fr}
+    .three{grid-template-columns:1fr 1fr 1fr}
+    .four{grid-template-columns:1fr 1fr 1fr 1fr}
+  }
+
+  .primary{background:var(--primary)}
+  .ok{background:var(--ok)}
+  .danger{background:var(--danger)}
+  .ghost{background:var(--ghost)}
+
+  .list{margin-top:10px; display:grid; gap:10px}
+  .item{padding:10px 12px; border:1px solid var(--border); border-radius:12px; background:rgba(255,255,255,.04)}
+  .small{font-size:12px; color:var(--muted); line-height:1.35}
+  .divider{height:1px; background:rgba(255,255,255,.10); margin:12px 0}
+
+  .matchHeader{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:8px}
+  .matchNum{font-weight:800}
+  .statusTag{font-size:12px; color:var(--muted); border:1px solid var(--border); padding:4px 8px; border-radius:999px; background:rgba(255,255,255,.04)}
+
+  .laneRow{display:grid; gap:8px}
+  @media(min-width:520px){ .laneRow{grid-template-columns:1fr 1fr} }
+  .lane{padding:10px 12px; border-radius:12px; border:1px dashed rgba(255,255,255,.18); background:rgba(255,255,255,.03)}
+  .lane b{font-weight:900}
+  .winner{border-style:solid !important; border-color: rgba(53,208,127,.75) !important; background: rgba(53,208,127,.10) !important}
+  .loser{opacity:.65}
+
+  .btnInline{display:grid; gap:8px; margin-top:10px; grid-template-columns:1fr 1fr}
+  .btnInline button{margin-top:0}
+
+  .historyTitle{display:flex; justify-content:space-between; align-items:center; gap:10px}
+
+  /* Racer toggles */
+  .rline{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap}
+  .rtoggles{display:flex; gap:14px; flex-wrap:wrap; align-items:center}
+  .check{display:flex; gap:8px; align-items:center; font-size:12px; color:var(--muted)}
+  .check input{width:18px; height:18px; margin:0; accent-color:#4da3ff}
+
+  /* Scoreboard table-ish */
+  .scoreRow{display:grid; grid-template-columns: 1fr auto; gap:10px; align-items:center}
+  .scorePts{font-weight:900}
+  .scoreSub{font-size:12px; color:var(--muted); margin-top:4px}
+  .badgeWin{display:inline-block; margin-left:8px; padding:2px 8px; border-radius:999px; border:1px solid rgba(53,208,127,.55); background: rgba(53,208,127,.12); color:#c9ffe1; font-size:12px}
+  .badgeRU{display:inline-block; margin-left:8px; padding:2px 8px; border-radius:999px; border:1px solid rgba(255,255,255,.20); background: rgba(255,255,255,.05); color:#e8eef7; font-size:12px}
+</style>
+</head>
+
+<body>
+
+<div class="topline">
+  <h1>🏁 Drag Racing Pairings</h1>
+  <div class="pill" id="roundPill">Round: —</div>
+</div>
+
+<div class="card">
+  <div class="row two">
+    <div>
+      <label>Racer name</label>
+      <input id="name" placeholder="e.g. Kareem">
+    </div>
+    <div>
+      <label>Car # (optional)</label>
+      <input id="car" placeholder="e.g. 340X">
+    </div>
+  </div>
+
+  <div class="row four" style="margin-top:10px">
+    <button class="primary" id="add">Add Racer</button>
+    <button class="ok" id="start">Start Round 1</button>
+    <button class="ghost" id="next">Next Round</button>
+    <button class="danger" id="reset">Reset</button>
+  </div>
+
+  <div class="row three" style="margin-top:10px">
+    <button class="ghost" id="lock">Lock</button>
+    <button class="primary" id="share">Share</button>
+    <button class="danger" id="clearResults">Clear Round Results</button>
+  </div>
+
+  <div class="small" style="margin-top:10px">
+    Points: <b>+1</b> show up, <b>+1</b> tech card, <b>+3</b> per round win, <b>+5</b> runner up, <b>+10</b> winner.<br/>
+    Random BYE: <b>no racer gets more than one</b> unless forced.
+  </div>
+
+  <div class="divider"></div>
+  <div class="small" id="statusLine">Add racers to begin.</div>
+</div>
+
+<div class="card">
+  <b>Racers</b>
+  <div class="small" style="margin-top:6px">Moderator can toggle “Showed up” and “Tech card” for points.</div>
+  <div id="racers" class="list"></div>
+</div>
+
+<div class="card">
+  <div class="matchHeader">
+    <b id="pairingsTitle">Pairings</b>
+    <span class="statusTag" id="lockTag">Unlocked</span>
+  </div>
+  <div id="pairs" class="list"></div>
+  <div id="bye" class="small"></div>
+  <div id="champ" class="small" style="margin-top:10px; font-weight:800;"></div>
+</div>
+
+<div class="card" id="scoreCard">
+  <div class="historyTitle">
+    <b>Scoreboard</b>
+    <span class="statusTag">Live</span>
+  </div>
+  <div class="small" style="margin-top:6px">Updates as you select winners.</div>
+  <div id="scoreboard" class="list" style="margin-top:10px;"></div>
+</div>
+
+<div class="card" id="historyCard" style="display:none;">
+  <div class="historyTitle">
+    <b>Event History</b>
+    <span class="statusTag">Complete</span>
+  </div>
+  <div class="small" style="margin-top:6px">Shows every round after the champion is decided.</div>
+  <div id="history" class="list" style="margin-top:10px;"></div>
+</div>
+
+<script>
+const STORE = "drag_pairings_points_v1";
+const $ = id => document.getElementById(id);
+
+let state = {
+  locked: false,
+  racers: [],
+
+  round: 0,
+  activePool: [],
+  matches: [],        // [{L,R,winner:null|'L'|'R'}]
+  bye: null,          // random BYE racer
+  winners: [],
+  champion: null,
+  runnerUp: null,
+
+  history: [],        // [{round, matches:[{L,R,winner}], bye}]
+  byeCounts: {}       // random BYEs only: {racerId: count}
+};
+
+function save(){ localStorage.setItem(STORE, JSON.stringify(state)); render(); }
+function load(){
+  const raw = localStorage.getItem(STORE);
+  if(raw) { try { state = JSON.parse(raw); } catch {} }
+
+  if(!state || !Array.isArray(state.racers)){
+    state = { locked:false, racers:[], round:0, activePool:[], matches:[], bye:null, winners:[], champion:null, runnerUp:null, history:[], byeCounts:{} };
+  }
+  if(!Array.isArray(state.history)) state.history = [];
+  if(!state.byeCounts || typeof state.byeCounts !== "object") state.byeCounts = {};
+  if(!("runnerUp" in state)) state.runnerUp = null;
+
+  // Backfill racer fields if older save
+  state.racers = state.racers.map(r => ({
+    id: r.id, name: r.name, car: r.car || "",
+    showedUp: (r.showedUp ?? true),
+    techCard: (r.techCard ?? true)
+  }));
+
+  render();
+}
+
+function uid(){ return "r_" + Math.random().toString(36).slice(2) + Date.now().toString(36); }
+function shuffle(a){
+  const arr = a.slice();
+  for(let i=arr.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
+  }
+  return arr;
+}
+function formatRacer(r){ return r.car ? `${r.name} #${r.car}` : r.name; }
+
+function assignLanes(a,b){
+  return (Math.random()<0.5) ? {L:a, R:b} : {L:b, R:a};
+}
+
+function getByeCount(id){ return Number(state.byeCounts[id] || 0); }
+function incBye(id){ state.byeCounts[id] = getByeCount(id) + 1; }
+function decBye(id){
+  const v = getByeCount(id) - 1;
+  state.byeCounts[id] = Math.max(0, v);
+}
+
+function chooseByeCandidate(list){
+  for(const r of list){
+    if(getByeCount(r.id) === 0) return r;
+  }
+  return list[0] || null; // forced
+}
+
+function buildMatchesFromPool(pool){
+  state.matches = [];
+  state.winners = [];
+  state.bye = null;
+  state.runnerUp = null;
+
+  let list = shuffle(pool);
+
+  if(list.length % 2 === 1){
+    const byeRacer = chooseByeCandidate(list);
+    if(byeRacer){
+      list = list.filter(r => r.id !== byeRacer.id);
+      state.bye = byeRacer;
+      incBye(byeRacer.id);        // counts only random BYE
+      state.winners.push(state.bye); // auto-advance
+    }
+  }
+
+  for(let i=0;i<list.length;i+=2){
+    const lr = assignLanes(list[i], list[i+1]);
+    state.matches.push({ L: lr.L, R: lr.R, winner: null });
+  }
+}
+
+function startRoundOne(){
+  if(state.locked) return;
+
+  state.round = 0;
+  state.activePool = [];
+  state.matches = [];
+  state.bye = null;
+  state.winners = [];
+  state.champion = null;
+  state.runnerUp = null;
+  state.history = [];
+  state.byeCounts = {};
+
+  if(state.racers.length === 0){ save(); return; }
+
+  state.round = 1;
+  state.activePool = state.racers.slice();
+  buildMatchesFromPool(state.activePool);
+  save();
+}
+
+function allDecided(){ return state.matches.every(m => m.winner === 'L' || m.winner === 'R'); }
+
+function computeWinnersFromMatches(){
+  const wins = [];
+  if(state.bye) wins.push(state.bye);
+
+  for(const m of state.matches){
+    if(m.winner === 'L') wins.push(m.L);
+    if(m.winner === 'R') wins.push(m.R);
+  }
+
+  const seen = new Set();
+  const dedup = [];
+  for(const r of wins){
+    if(!r || !r.id) continue;
+    if(seen.has(r.id)) continue;
+    seen.add(r.id);
+    dedup.push(r);
+  }
+  state.winners = dedup;
+}
+
+function snapshotRoundToHistory(roundNum){
+  const snapMatches = state.matches.map(m => ({
+    L: { id: m.L.id, name: m.L.name, car: m.L.car || "" },
+    R: { id: m.R.id, name: m.R.name, car: m.R.car || "" },
+    winner: m.winner // 'L'|'R'
+  }));
+  const snapBye = state.bye ? { id: state.bye.id, name: state.bye.name, car: state.bye.car || "" } : null;
+
+  state.history = state.history.filter(h => h.round !== roundNum);
+  state.history.push({ round: roundNum, matches: snapMatches, bye: snapBye });
+  state.history.sort((a,b)=>a.round-b.round);
+}
+
+function determineRunnerUpIfFinal(){
+  // Runner up is the loser in the last decided match of the final round (if it exists)
+  if(!state.history.length) return null;
+  const last = state.history[state.history.length - 1];
+  if(!last || !last.matches || last.matches.length === 0) return null;
+
+  // If multiple matches (rare in final snapshot), pick the last one
+  const m = last.matches[last.matches.length - 1];
+  if(!m || !m.winner) return null;
+
+  const loser = (m.winner === 'L') ? m.R : m.L;
+  return loser ? { id: loser.id, name: loser.name, car: loser.car || "" } : null;
+}
+
+function nextRound(){
+  if(state.locked) return;
+
+  if(state.round === 0){
+    startRoundOne();
+    return;
+  }
+
+  const hasMatches = state.matches.length > 0;
+  if(hasMatches && !allDecided()){
+    alert("Pick winners for all matchups before Next Round.");
+    return;
+  }
+
+  snapshotRoundToHistory(state.round);
+  computeWinnersFromMatches();
+
+  if(state.winners.length === 1){
+    state.champion = state.winners[0];
+    // runner up from last round snapshot
+    state.runnerUp = determineRunnerUpIfFinal();
+    save();
+    return;
+  }
+
+  state.round += 1;
+  state.activePool = state.winners.slice();
+  buildMatchesFromPool(state.activePool);
+  save();
+}
+
+function clearRoundResults(){
+  if(state.locked) return;
+
+  // undo random bye count if round has random bye
+  if(state.bye && state.bye.id) decBye(state.bye.id);
+
+  for(const m of state.matches) m.winner = null;
+
+  state.winners = state.bye ? [state.bye] : [];
+  state.champion = null;
+  state.runnerUp = null;
+  state.history = state.history.filter(h => h.round !== state.round);
+
+  save();
+}
+
+function lockToggle(){ state.locked = !state.locked; save(); }
+function resetAll(){
+  state = { locked:false, racers:[], round:0, activePool:[], matches:[], bye:null, winners:[], champion:null, runnerUp:null, history:[], byeCounts:{} };
+  save();
+}
+
+/* ---------------- Points ----------------
+1 showing up
+1 tech card
+3 per round win
+5 runner up
+10 event winner
+BYE does NOT count as a round win (unless you later want it to).
+-----------------------------------------*/
+function computePoints(){
+  const roundWins = {}; // racerId -> wins count
+
+  // count match winners from history only
+  for(const h of state.history){
+    for(const m of (h.matches || [])){
+      if(m.winner === 'L') roundWins[m.L.id] = (roundWins[m.L.id] || 0) + 1;
+      if(m.winner === 'R') roundWins[m.R.id] = (roundWins[m.R.id] || 0) + 1;
+    }
+  }
+
+  const champId = state.champion?.id || null;
+  const runnerId = state.runnerUp?.id || null;
+
+  const rows = state.racers.map(r => {
+    const wins = roundWins[r.id] || 0;
+    const base = (r.showedUp ? 1 : 0) + (r.techCard ? 1 : 0);
+    const winPts = wins * 3;
+    const ruPts = (runnerId && r.id === runnerId) ? 5 : 0;
+    const champPts = (champId && r.id === champId) ? 10 : 0;
+    const total = base + winPts + ruPts + champPts;
+
+    return {
+      racer: r,
+      wins,
+      base,
+      total,
+      champ: (champId && r.id === champId),
+      runnerUp: (runnerId && r.id === runnerId)
+    };
+  });
+
+  // Sort: total desc, then wins desc, then name
+  rows.sort((a,b)=>{
+    if(b.total !== a.total) return b.total - a.total;
+    if(b.wins !== a.wins) return b.wins - a.wins;
+    return (a.racer.name || "").localeCompare(b.racer.name || "");
+  });
+
+  return rows;
+}
+
+function shareText(){
+  let t = "🏁 Drag Racing Pairings\n";
+  if(state.round > 0) t += `Round ${state.round}\n`;
+  t += "\n";
+
+  if(state.champion){
+    t += `🏆 WINNER: ${formatRacer(state.champion)}\n`;
+    if(state.runnerUp) t += `🥈 RUNNER UP: ${state.runnerUp.car ? state.runnerUp.name + " #" + state.runnerUp.car : state.runnerUp.name}\n`;
+    t += "\n";
+  }
+
+  if(state.matches.length === 0 && !state.bye && !state.champion){
+    t += "(No pairings yet)\n";
+  } else if(!state.champion) {
+    state.matches.forEach((m,i)=>{
+      const left = formatRacer(m.L);
+      const right = formatRacer(m.R);
+      const win =
+        m.winner === 'L' ? `✅ Winner: LEFT (${left})` :
+        m.winner === 'R' ? `✅ Winner: RIGHT (${right})` :
+        `⏳ Winner: TBD`;
+
+      t += `Pair ${i+1}\n`;
+      t += ` Left:  ${left}\n`;
+      t += ` Right: ${right}\n`;
+      t += ` ${win}\n\n`;
+    });
+
+    if(state.bye){
+      t += `BYE / Auto-Advance (random): ${formatRacer(state.bye)}\n\n`;
+    }
+  }
+
+  // Scoreboard always included
+  const rows = computePoints();
+  t += "📊 Points\n";
+  rows.forEach((row, idx)=>{
+    const tag = row.champ ? " (WINNER)" : row.runnerUp ? " (RUNNER UP)" : "";
+    t += `${idx+1}. ${formatRacer(row.racer)}${tag} — ${row.total} pts (wins:${row.wins})\n`;
+  });
+
+  return t;
+}
+
+async function share(){
+  const text = shareText();
+  if(navigator.share){
+    try{ await navigator.share({ title: "Drag Racing Pairings", text }); return; }catch{}
+  }
+  try{ await navigator.clipboard.writeText(text); alert("Copied to clipboard"); }
+  catch{ alert(text); }
+}
+
+function render(){
+  $("roundPill").textContent = state.round ? `Round: ${state.round}` : "Round: —";
+  $("lockTag").textContent = state.locked ? "Locked" : "Unlocked";
+  $("lock").textContent = state.locked ? "Unlock" : "Lock";
+
+  $("add").disabled = state.locked;
+  $("start").disabled = state.locked;
+  $("next").disabled = state.locked;
+  $("clearResults").disabled = state.locked;
+
+  if(state.champion){
+    $("statusLine").textContent = `Winner: ${formatRacer(state.champion)}. Scoreboard + Event History below.`;
+  } else if(state.round === 0){
+    $("statusLine").textContent = "Add racers, then Start Round 1.";
+  } else {
+    const undecided = state.matches.filter(m => !m.winner).length;
+    $("statusLine").textContent =
+      (state.matches.length === 0)
+        ? "No matchups (BYE only). Tap Next Round."
+        : (undecided === 0 ? "All winners picked. Tap Next Round." : `Pick winners: ${undecided} matchup(s) still TBD.`);
+  }
+
+  // Racers list with toggles
+  const racersDiv = $("racers");
+  racersDiv.innerHTML = "";
+  if(state.racers.length === 0){
+    racersDiv.innerHTML = `<div class="item small">No racers added yet.</div>`;
+  } else {
+    state.racers.forEach(r=>{
+      const html = document.createElement("div");
+      html.className = "item";
+      html.innerHTML = `
+        <div class="rline">
+          <div>
+            <b>${r.name}</b> <span class="small">${r.car ? "#"+r.car : ""}</span>
+            <div class="small">Points base: ${(r.showedUp?1:0)+(r.techCard?1:0)} (Show:${r.showedUp?1:0}, Tech:${r.techCard?1:0})</div>
+          </div>
+          <div class="rtoggles">
+            <label class="check">
+              <input type="checkbox" data-t="show" data-id="${r.id}" ${r.showedUp ? "checked":""} ${state.locked ? "disabled":""}/>
+              Showed up (+1)
+            </label>
+            <label class="check">
+              <input type="checkbox" data-t="tech" data-id="${r.id}" ${r.techCard ? "checked":""} ${state.locked ? "disabled":""}/>
+              Tech card (+1)
+            </label>
+          </div>
+        </div>
+      `;
+      racersDiv.appendChild(html);
+    });
+  }
+
+  // Pairings title
+  $("pairingsTitle").textContent = state.round ? `Round ${state.round} Pairings` : "Pairings";
+
+  // Matches
+  const pairsDiv = $("pairs");
+  pairsDiv.innerHTML = "";
+  if(state.matches.length === 0 && !state.bye && !state.champion){
+    pairsDiv.innerHTML = `<div class="item small">No pairings generated yet.</div>`;
+  }
+
+  state.matches.forEach((m, idx) => {
+    const leftIsWinner = m.winner === 'L';
+    const rightIsWinner = m.winner === 'R';
+
+    const wrap = document.createElement("div");
+    wrap.className = "item";
+    wrap.innerHTML = `
+      <div class="matchHeader">
+        <div class="matchNum">Pair ${idx+1}</div>
+        <div class="statusTag">${m.winner ? "Winner selected" : "Winner TBD"}</div>
+      </div>
+
+      <div class="laneRow">
+        <div class="lane ${leftIsWinner ? "winner" : (rightIsWinner ? "loser" : "")}">
+          <div class="small">LEFT</div>
+          <b>${formatRacer(m.L)}</b>
+        </div>
+        <div class="lane ${rightIsWinner ? "winner" : (leftIsWinner ? "loser" : "")}">
+          <div class="small">RIGHT</div>
+          <b>${formatRacer(m.R)}</b>
+        </div>
+      </div>
+
+      <div class="btnInline">
+        <button class="ok" data-win="L" data-idx="${idx}" ${state.locked ? "disabled":""}>Left Wins</button>
+        <button class="ok" data-win="R" data-idx="${idx}" ${state.locked ? "disabled":""}>Right Wins</button>
+      </div>
+
+      <div class="btnInline" style="grid-template-columns:1fr;">
+        <button class="ghost" data-clear="${idx}" ${state.locked ? "disabled":""}>Clear Winner</button>
+      </div>
+    `;
+    pairsDiv.appendChild(wrap);
+  });
+
+  // BYE / Champion display
+  if(state.bye){
+    const count = getByeCount(state.bye.id);
+    $("bye").textContent = `BYE / Auto-Advance (random): ${formatRacer(state.bye)} (BYE count this event: ${count})`;
+  } else {
+    $("bye").textContent = "";
+  }
+
+  if(state.champion){
+    let line = `🏆 WINNER: ${formatRacer(state.champion)}`;
+    if(state.runnerUp) line += ` | 🥈 RUNNER UP: ${state.runnerUp.car ? state.runnerUp.name + " #" + state.runnerUp.car : state.runnerUp.name}`;
+    $("champ").textContent = line;
+  } else {
+    $("champ").textContent = "";
+  }
+
+  // Scoreboard
+  const scoreDiv = $("scoreboard");
+  scoreDiv.innerHTML = "";
+  const rows = computePoints();
+  if(rows.length === 0){
+    scoreDiv.innerHTML = `<div class="item small">No racers yet.</div>`;
+  } else {
+    rows.forEach(row=>{
+      const tag = row.champ ? `<span class="badgeWin">WINNER</span>` : row.runnerUp ? `<span class="badgeRU">RUNNER UP</span>` : "";
+      const sub = `Show:${row.racer.showedUp?1:0} Tech:${row.racer.techCard?1:0} | Wins:${row.wins}×3=${row.wins*3}` +
+                  (row.runnerUp ? ` | RunnerUp:+5` : ``) +
+                  (row.champ ? ` | Winner:+10` : ``);
+
+      const item = document.createElement("div");
+      item.className = "item";
+      item.innerHTML = `
+        <div class="scoreRow">
+          <div>
+            <b>${formatRacer(row.racer)}</b>${tag}
+            <div class="scoreSub">${sub}</div>
+          </div>
+          <div class="scorePts">${row.total}</div>
+        </div>
+      `;
+      scoreDiv.appendChild(item);
+    });
+  }
+
+  // Event History (show only when complete)
+  const historyCard = $("historyCard");
+  const historyDiv = $("history");
+  if(state.champion){
+    historyCard.style.display = "block";
+    historyDiv.innerHTML = "";
+
+    state.history.forEach(h => {
+      const block = document.createElement("div");
+      block.className = "item";
+      let html = `<b>Round ${h.round}</b><div class="divider"></div>`;
+
+      if((h.matches || []).length === 0 && h.bye){
+        const bye = h.bye.car ? `${h.bye.name} #${h.bye.car}` : h.bye.name;
+        html += `<div class="small">BYE only (auto-advance)</div>`;
+        html += `<div style="margin-top:6px"><b>${bye}</b></div>`;
+      } else {
+        (h.matches || []).forEach((m, i) => {
+          const left = m.L.car ? `${m.L.name} #${m.L.car}` : m.L.name;
+          const right = m.R.car ? `${m.R.name} #${m.R.car}` : m.R.name;
+          const winText =
+            (m.winner === 'L') ? `Winner: LEFT (${left})` :
+            (m.winner === 'R') ? `Winner: RIGHT (${right})` :
+            `Winner: TBD`;
+          html += `<div style="margin:10px 0 6px"><b>Pair ${i+1}</b></div>`;
+          html += `<div class="small">Left: ${left}</div>`;
+          html += `<div class="small">Right: ${right}</div>`;
+          html += `<div class="small" style="margin-top:4px">${winText}</div>`;
+        });
+
+        if(h.bye){
+          const bye = h.bye.car ? `${h.bye.name} #${h.bye.car}` : h.bye.name;
+          html += `<div class="divider"></div>`;
+          html += `<div class="small">BYE / Auto-Advance (random): <b>${bye}</b></div>`;
+        }
+      }
+
+      block.innerHTML = html;
+      historyDiv.appendChild(block);
+    });
+  } else {
+    historyCard.style.display = "none";
+    historyDiv.innerHTML = "";
+  }
+}
+
+// Winner buttons
+$("pairs").addEventListener("click", (e)=>{
+  if(state.locked) return;
+
+  const winBtn = e.target.closest("button[data-win]");
+  const clearBtn = e.target.closest("button[data-clear]");
+
+  if(winBtn){
+    const idx = Number(winBtn.getAttribute("data-idx"));
+    const side = winBtn.getAttribute("data-win"); // 'L' or 'R'
+    if(!state.matches[idx]) return;
+    state.matches[idx].winner = side;
+    save();
+  }
+
+  if(clearBtn){
+    const idx = Number(clearBtn.getAttribute("data-clear"));
+    if(!state.matches[idx]) return;
+    state.matches[idx].winner = null;
+    state.history = state.history.filter(h => h.round !== state.round);
+    state.champion = null;
+    state.runnerUp = null;
+    save();
+  }
+});
+
+// Racer checkboxes (showed up / tech card)
+$("racers").addEventListener("change", (e)=>{
+  const cb = e.target.closest("input[type='checkbox'][data-id]");
+  if(!cb) return;
+  if(state.locked) { cb.checked = !cb.checked; return; }
+
+  const id = cb.getAttribute("data-id");
+  const t = cb.getAttribute("data-t"); // show | tech
+  const r = state.racers.find(x => x.id === id);
+  if(!r) return;
+
+  if(t === "show") r.showedUp = cb.checked;
+  if(t === "tech") r.techCard = cb.checked;
+
+  save();
+});
+
+$("add").onclick = () => {
+  if(state.locked) return;
+  const n = $("name").value.trim();
+  const c = $("car").value.trim();
+  if(!n) return;
+
+  state.racers.push({
+    id: uid(),
+    name: n,
+    car: c,
+    showedUp: true,
+    techCard: true
+  });
+
+  $("name").value = "";
+  $("car").value = "";
+  save();
+};
+
+$("start").onclick = startRoundOne;
+$("next").onclick = nextRound;
+$("lock").onclick = lockToggle;
+$("share").onclick = share;
+$("clearResults").onclick = clearRoundResults;
+
+$("reset").onclick = () => {
+  if(!confirm("Reset everything? This clears racers and all rounds.")) return;
+  resetAll();
+};
+
+load();
+</script>
+
+</body>
+</html>

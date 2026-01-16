@@ -156,8 +156,8 @@ const STORE = "drag_pairings_points_v1";
 const $ = id => document.getElementById(id);
 
 let state = {
-  locked: false,
-  racers: [],
+state.locked = true; // FORCE VIEW-ONLY MODE FOR RACERS
+
 
   round: 0,
   activePool: [],
